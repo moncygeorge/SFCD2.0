@@ -208,27 +208,6 @@ def index():
 
 
 @app.route('/rsvp', methods=['GET', 'POST'])
-def rsvp():
-    if request.method == 'POST':
-        first_name = ' '.join(request.form.get('first_name', '').strip().split())
-        attending_raw = request.form.get('attending', '')
-        if not first_name:
-            flash('Please enter your first name.', 'danger')
-            return redirect(url_for('rsvp'))
-        if len(first_name) > 60:
-            flash('Please enter a shorter first name.', 'danger')
-            return redirect(url_for('rsvp'))
-        if attending_raw not in ('yes', 'no'):
-            flash('Please tell us whether you will be attending.', 'danger')
-            return redirect(url_for('rsvp'))
-        attending = 1 if attending_raw == 'yes' else 0
-        conn = get_db()
-        conn.execute("INSERT INTO rsvps (first_name, attending) VALUES (?, ?) ON CONFLICT(first_name) DO UPDATE SET attending=excluded.attending, updated_at=CURRENT_TIMESTAMP", (first_name, attending))
-        conn.commit()
-        conn.close()
-        return render_template('rsvp_thanks.html', first_name=first_name, attending=bool(attending))
-    return render_template('rsvp.html')
-
 @app.route('/admin/rsvp')
 def admin_rsvp():
     if not admin_required():
