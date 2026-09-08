@@ -931,5 +931,50 @@ def generate_pdf(usernames, output_file='static/voters_list.pdf'):
     c.save()
 
 # ── entrypoint ────────────────────────────────────────────────────────────────
+# ---------------------------------------------------------
+# Practical Evangelism RSVP
+# ---------------------------------------------------------
+
+@app.route('/rsvp', methods=['GET', 'POST'])
+def rsvp():
+
+    db_path = os.environ.get("DB_PATH", "votestack3.db")
+
+    conn = sqlite3.connect(db_path)
+
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS rsvps (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            first_name TEXT NOT NULL,
+            attending TEXT NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    conn.commit()
+
+    submitted = False
+
+    if request.method == 'POST':
+
+        first_name = request.form.get('first_name', '').strip()
+        attending = request.form.get('attending', '').strip()
+
+        if first_name and attending:
+
+            conn.execute(
+                "INSERT INTO rsvps (first_name, attending) VALUES (?, ?)",
+                (first_name, attending)
+            )
+
+            conn.commit()
+            submitted = True
+
+    conn.close()
+
+    return render_template(
+        'rsvp.html',
+        submitted=submitted
+    )
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000, debug=False)
