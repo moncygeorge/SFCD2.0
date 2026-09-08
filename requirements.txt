@@ -1,0 +1,6 @@
+flask
+gunicorn
+python-docx
+reportlab
+pywebpush
+py-vapid

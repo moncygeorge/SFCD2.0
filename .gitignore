@@ -1,0 +1,19 @@
+__pycache__/
+*.pyc
+*.pyo
+*.db
+*.sqlite3
+.env
+.idea/
+node_modules/
+static/voters_list.pdf
+static/voters_list.docx
+ssl/
+
+# uploaded member content — keep folders, ignore actual files
+static/uploads/announcements/*
+!static/uploads/announcements/.gitkeep
+static/uploads/events/*
+!static/uploads/events/.gitkeep
+static/uploads/gallery/*
+!static/uploads/gallery/.gitkeep
