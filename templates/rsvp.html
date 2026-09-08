@@ -1,1 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+    <title>Practical Evangelism RSVP</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: Arial, Helvetica, sans-serif;
+            background: linear-gradient(135deg, #eef4f8, #dce8f1);
+            color: #222;
+        }
+
+        .card {
+            width: 100%;
+            max-width: 480px;
+            background: white;
+            border-radius: 20px;
+            padding: 35px 28px;
+            box-shadow: 0 10px 35px rgba(0,0,0,.12);
+        }
+
+        .church {
+            text-align: center;
+            color: #777;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #17324d;
+            margin: 5px 0 15px;
+            font-size: 30px;
+        }
+
+        .details {
+            text-align: center;
+            background: #f3f7fa;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 28px;
+        }
+
+        .date {
+            font-size: 18px;
+            font-weight: bold;
+            color: #17324d;
+        }
+
+        .time {
+            margin-top: 6px;
+            font-size: 17px;
+        }
+
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 14px;
+            font-size: 17px;
+            border: 1px solid #bbb;
+            border-radius: 9px;
+            margin-bottom: 24px;
+        }
+
+        .question {
+            font-weight: bold;
+            margin-bottom: 12px;
+        }
+
+        .choice {
+            border: 1px solid #ddd;
+            border-radius: 9px;
+            padding: 14px;
+            margin-bottom: 10px;
+            cursor: pointer;
+        }
+
+        .choice input {
+            margin-right: 10px;
+        }
+
+        button {
+            width: 100%;
+            margin-top: 22px;
+            padding: 15px;
+            border: none;
+            border-radius: 9px;
+            background: #17324d;
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #244d72;
+        }
+
+        .success {
+            text-align: center;
+        }
+
+        .check {
+            font-size: 55px;
+            margin-bottom: 10px;
+        }
+
+        .success h2 {
+            color: #17324d;
+        }
+
+        .success p {
+            font-size: 17px;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="card">
+
+    {% if submitted %}
+
+        <div class="success">
+
+            <div class="check">✓</div>
+
+            <h2>Thank You!</h2>
+
+            <p>
+                Your RSVP for <strong>Practical Evangelism</strong>
+                has been received.
+            </p>
+
+            <p>
+                Saturday, September 26<br>
+                10:30 AM
+            </p>
+
+        </div>
+
+    {% else %}
+
+        <div class="church">
+            Sharon Fellowship Church Dallas
+        </div>
+
+        <h1>Practical Evangelism</h1>
+
+        <div class="details">
+            <div class="date">
+                Saturday, September 26, 2026
+            </div>
+
+            <div class="time">
+                10:30 AM
+            </div>
+        </div>
+
+        <form method="POST">
+
+            <label for="first_name">
+                First Name
+            </label>
+
+            <input
+                type="text"
+                id="first_name"
+                name="first_name"
+                placeholder="Enter your first name"
+                required
+                autocomplete="given-name"
+            >
+
+            <div class="question">
+                Will you be there?
+            </div>
+
+            <label class="choice">
+                <input
+                    type="radio"
+                    name="attending"
+                    value="Yes"
+                    required
+                >
+                Yes, I'll be there
+            </label>
+
+            <label class="choice">
+                <input
+                    type="radio"
+                    name="attending"
+                    value="No"
+                    required
+                >
+                No, I can't make it
+            </label>
+
+            <button type="submit">
+                Submit RSVP
+            </button>
+
+        </form>
+
+    {% endif %}
+
+</div>
+
+</body>
+</html>
