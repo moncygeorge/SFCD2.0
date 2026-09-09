@@ -96,6 +96,7 @@ def admin_login():
 
         if username == admin_username and password == admin_password:
             session["admin_logged_in"] = True
+            session["is_admin"] = True
             return redirect(url_for("admin_dashboard"))
 
         error = "Invalid username or password."
@@ -193,7 +194,6 @@ def index():
     return redirect(url_for('announcements'))
 
 
-@app.route('/rsvp', methods=['GET', 'POST'])
 @app.route('/admin/rsvp')
 def admin_rsvp():
     if not admin_required():
@@ -452,17 +452,41 @@ def submit_vote_api():
 
 # ── admin dashboard ───────────────────────────────────────────────────────────
 def admin_required():
-    return session.get('is_admin') is True
+    return (
+        session.get('is_admin') is True
+        or session.get('admin_logged_in') is True
+    )
 
 
+@app.route('/admin')
 @app.route('/admin_dashboard', methods=['GET'])
 def admin_dashboard():
     if not admin_required():
         flash("Access restricted to admin only.", "danger")
-        return redirect(url_for('index'))
-    role        = load_role()
+        return redirect(url_for('admin_login'))
+
+    role = load_role()
     voting_open = load_voting_status() == 'open'
-    return render_template('admin_dashboard.html', role=role, voting_open=voting_open)
+
+    conn = get_rsvp_db()
+    events = conn.execute("""
+        SELECT
+            e.*,
+            SUM(CASE WHEN r.attending = 'Yes' THEN 1 ELSE 0 END) AS yes_count,
+            SUM(CASE WHEN r.attending = 'No' THEN 1 ELSE 0 END) AS no_count
+        FROM rsvp_events e
+        LEFT JOIN rsvp_responses r ON r.event_id = e.id
+        GROUP BY e.id
+        ORDER BY e.id DESC
+    """).fetchall()
+    conn.close()
+
+    return render_template(
+        'admin_dashboard.html',
+        role=role,
+        voting_open=voting_open,
+        events=events
+    )
 
 
 @app.route('/toggle_voting', methods=['POST'])
@@ -896,51 +920,6 @@ def generate_pdf(usernames, output_file='static/voters_list.pdf'):
     c.save()
 
 # ── entrypoint ────────────────────────────────────────────────────────────────
-# ---------------------------------------------------------
-# Practical Evangelism RSVP
-# ---------------------------------------------------------
-
-@app.route('/rsvp', methods=['GET', 'POST'])
-def rsvp():
-
-    db_path = os.environ.get("DB_PATH", "votestack3.db")
-
-    conn = sqlite3.connect(db_path)
-
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS rsvps (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            first_name TEXT NOT NULL,
-            attending TEXT NOT NULL,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-
-    conn.commit()
-
-    submitted = False
-
-    if request.method == 'POST':
-
-        first_name = request.form.get('first_name', '').strip()
-        attending = request.form.get('attending', '').strip()
-
-        if first_name and attending:
-
-            conn.execute(
-                "INSERT INTO rsvps (first_name, attending) VALUES (?, ?)",
-                (first_name, attending)
-            )
-
-            conn.commit()
-            submitted = True
-
-    conn.close()
-
-    return render_template(
-        'rsvp.html',
-        submitted=submitted
-    )
 # =========================================================
 # ADMIN + RSVP SYSTEM
 # =========================================================
@@ -948,12 +927,9 @@ def rsvp():
 ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "admin")
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD")
 
-DB_PATH = os.environ.get("DB_PATH", "sfcd.db")
-
 
 def get_rsvp_db():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
+    conn = get_db()
 
     conn.execute("""
         CREATE TABLE IF NOT EXISTS rsvp_events (
@@ -967,7 +943,7 @@ def get_rsvp_db():
     """)
 
     conn.execute("""
-        CREATE TABLE IF NOT EXISTS rsvps (
+        CREATE TABLE IF NOT EXISTS rsvp_responses (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             event_id INTEGER NOT NULL,
             first_name TEXT NOT NULL,
@@ -988,6 +964,7 @@ def get_rsvp_db():
 @app.route("/admin_logout")
 def admin_logout():
     session.pop("admin_logged_in", None)
+    session.pop("is_admin", None)
     return redirect(url_for("admin_login"))
 
 
@@ -999,7 +976,7 @@ def admin_logout():
 @app.route("/admin/rsvp/create", methods=["POST"])
 def create_rsvp_event():
 
-    if not session.get("admin_logged_in"):
+    if not admin_required():
         return redirect(url_for("admin_login"))
 
     title = request.form.get("title", "").strip()
@@ -1067,7 +1044,7 @@ def rsvp_event(event_id):
         if first_name and attending in ["Yes", "No"]:
 
             conn.execute("""
-                INSERT INTO rsvps
+                INSERT INTO rsvp_responses
                 (event_id, first_name, attending)
                 VALUES (?, ?, ?)
             """, (
@@ -1096,7 +1073,7 @@ def rsvp_event(event_id):
 @app.route("/admin/rsvp/<int:event_id>")
 def admin_rsvp_results(event_id):
 
-    if not session.get("admin_logged_in"):
+    if not admin_required():
         return redirect(url_for("admin_login"))
 
     conn = get_rsvp_db()
@@ -1108,7 +1085,7 @@ def admin_rsvp_results(event_id):
 
     responses = conn.execute("""
         SELECT *
-        FROM rsvps
+        FROM rsvp_responses
         WHERE event_id = ?
         ORDER BY created_at DESC
     """, (event_id,)).fetchall()
