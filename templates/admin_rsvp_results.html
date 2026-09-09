@@ -1,1 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RSVP Responses - SFCD Admin</title>
 
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f4f6f8;
+            color: #222;
+        }
+
+        header {
+            background: #17324d;
+            color: white;
+            padding: 20px;
+        }
+
+        header strong {
+            font-size: 20px;
+        }
+
+        .header-links {
+            float: right;
+        }
+
+        .header-links a {
+            color: white;
+            text-decoration: none;
+            margin-left: 18px;
+        }
+
+        .container {
+            max-width: 950px;
+            margin: 30px auto;
+            padding: 20px;
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 14px;
+            margin-bottom: 25px;
+            box-shadow: 0 3px 15px rgba(0,0,0,.08);
+        }
+
+        h1, h2, h3 {
+            color: #17324d;
+        }
+
+        .event-info {
+            background: #eef4f7;
+            padding: 15px;
+            border-radius: 9px;
+            margin-bottom: 20px;
+        }
+
+        .stats {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin: 20px 0;
+        }
+
+        .stat {
+            flex: 1;
+            min-width: 150px;
+            background: #eef4f7;
+            padding: 18px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-number {
+            display: block;
+            font-size: 30px;
+            font-weight: bold;
+            color: #17324d;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 13px 10px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background: #17324d;
+            color: white;
+        }
+
+        .yes {
+            font-weight: bold;
+            color: #237a38;
+        }
+
+        .no {
+            font-weight: bold;
+            color: #b33434;
+        }
+
+        .button {
+            display: inline-block;
+            background: #17324d;
+            color: white;
+            padding: 12px 18px;
+            border-radius: 7px;
+            text-decoration: none;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+
+        .button:hover {
+            background: #244d72;
+        }
+
+        .empty {
+            padding: 20px 0;
+            color: #666;
+        }
+
+        @media (max-width: 650px) {
+            .container {
+                margin: 15px auto;
+                padding: 12px;
+            }
+
+            .card {
+                padding: 18px;
+            }
+
+            .header-links {
+                float: none;
+                display: block;
+                margin-top: 10px;
+            }
+
+            table, thead, tbody, th, td, tr {
+                display: block;
+            }
+
+            thead {
+                display: none;
+            }
+
+            tr {
+                background: #f8f9fa;
+                margin-bottom: 12px;
+                padding: 10px;
+                border-radius: 8px;
+            }
+
+            td {
+                border: none;
+                padding: 6px 4px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <strong>SFCD Administration</strong>
+
+    <span class="header-links">
+        <a href="/admin_dashboard">Dashboard</a>
+        <a href="/admin_logout">Logout</a>
+    </span>
+</header>
+
+<div class="container">
+
+    <div class="card">
+
+        {% if event %}
+
+            <h1>{{ event.title }}</h1>
+
+            <div class="event-info">
+                <strong>Date:</strong> {{ event.event_date }}
+                &nbsp;&nbsp;
+                <strong>Time:</strong> {{ event.event_time }}
+            </div>
+
+            {% set yes_count = responses | selectattr('attending', 'equalto', 'Yes') | list | length %}
+            {% set no_count = responses | selectattr('attending', 'equalto', 'No') | list | length %}
+
+            <div class="stats">
+
+                <div class="stat">
+                    <span class="stat-number">{{ responses | length }}</span>
+                    Total Responses
+                </div>
+
+                <div class="stat">
+                    <span class="stat-number">{{ yes_count }}</span>
+                    Coming
+                </div>
+
+                <div class="stat">
+                    <span class="stat-number">{{ no_count }}</span>
+                    Not Coming
+                </div>
+
+            </div>
+
+            <a class="button" href="/admin_dashboard">
+                Back to Dashboard
+            </a>
+
+            <a class="button"
+               href="{{ request.host_url.rstrip('/') }}/rsvp/{{ event.id }}"
+               target="_blank">
+                Open RSVP Page
+            </a>
+
+        {% else %}
+
+            <h2>RSVP Event Not Found</h2>
+            <a class="button" href="/admin_dashboard">
+                Back to Dashboard
+            </a>
+
+        {% endif %}
+
+    </div>
+
+
+    {% if event %}
+
+    <div class="card">
+
+        <h2>Responses</h2>
+
+        {% if responses %}
+
+            <table>
+
+                <thead>
+                    <tr>
+                        <th>First Name</th>
+                        <th>Response</th>
+                        <th>Submitted</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                {% for response in responses %}
+
+                    <tr>
+                        <td>{{ response.first_name }}</td>
+
+                        <td>
+                            {% if response.attending == "Yes" %}
+                                <span class="yes">Yes</span>
+                            {% else %}
+                                <span class="no">No</span>
+                            {% endif %}
+                        </td>
+
+                        <td>{{ response.created_at }}</td>
+                    </tr>
+
+                {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        {% else %}
+
+            <p class="empty">
+                No one has responded to this RSVP yet.
+            </p>
+
+        {% endif %}
+
+    </div>
+
+    {% endif %}
+
+</div>
+
+</body>
+</html>
