@@ -997,36 +997,6 @@ def get_rsvp_db():
 
 
 # ---------------------------------------------------------
-# ADMIN LOGIN
-# ---------------------------------------------------------
-
-@app.route("/admin_login", methods=["GET", "POST"])
-def admin_login():
-
-    error = None
-
-    if request.method == "POST":
-
-        username = request.form.get("username", "").strip()
-        password = request.form.get("password", "")
-
-        if not ADMIN_PASSWORD:
-            error = "Admin password has not been configured."
-
-        elif (
-            hmac.compare_digest(username, ADMIN_USERNAME)
-            and hmac.compare_digest(password, ADMIN_PASSWORD)
-        ):
-            session["admin_logged_in"] = True
-            return redirect(url_for("admin_dashboard"))
-
-        else:
-            error = "Invalid username or password."
-
-    return render_template("admin_login.html", error=error)
-
-
-# ---------------------------------------------------------
 # ADMIN LOGOUT
 # ---------------------------------------------------------
 
