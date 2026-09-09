@@ -956,5 +956,255 @@ def rsvp():
         'rsvp.html',
         submitted=submitted
     )
+# =========================================================
+# ADMIN + RSVP SYSTEM
+# =========================================================
+
+ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "admin")
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD")
+
+DB_PATH = os.environ.get("DB_PATH", "sfcd.db")
+
+
+def get_rsvp_db():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS rsvp_events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            event_date TEXT NOT NULL,
+            event_time TEXT NOT NULL,
+            active INTEGER DEFAULT 1,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS rsvps (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            event_id INTEGER NOT NULL,
+            first_name TEXT NOT NULL,
+            attending TEXT NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(event_id) REFERENCES rsvp_events(id)
+        )
+    """)
+
+    conn.commit()
+    return conn
+
+
+# ---------------------------------------------------------
+# ADMIN LOGIN
+# ---------------------------------------------------------
+
+@app.route("/admin_login", methods=["GET", "POST"])
+def admin_login():
+
+    error = None
+
+    if request.method == "POST":
+
+        username = request.form.get("username", "").strip()
+        password = request.form.get("password", "")
+
+        if not ADMIN_PASSWORD:
+            error = "Admin password has not been configured."
+
+        elif (
+            hmac.compare_digest(username, ADMIN_USERNAME)
+            and hmac.compare_digest(password, ADMIN_PASSWORD)
+        ):
+            session["admin_logged_in"] = True
+            return redirect(url_for("admin_dashboard"))
+
+        else:
+            error = "Invalid username or password."
+
+    return render_template("admin_login.html", error=error)
+
+
+# ---------------------------------------------------------
+# ADMIN LOGOUT
+# ---------------------------------------------------------
+
+@app.route("/admin_logout")
+def admin_logout():
+    session.pop("admin_logged_in", None)
+    return redirect(url_for("admin_login"))
+
+
+# ---------------------------------------------------------
+# ADMIN DASHBOARD
+# ---------------------------------------------------------
+
+@app.route("/admin")
+def admin_dashboard():
+
+    if not session.get("admin_logged_in"):
+        return redirect(url_for("admin_login"))
+
+    conn = get_rsvp_db()
+
+    events = conn.execute("""
+        SELECT
+            e.*,
+
+            (
+                SELECT COUNT(*)
+                FROM rsvps r
+                WHERE r.event_id = e.id
+                AND r.attending = 'Yes'
+            ) AS yes_count,
+
+            (
+                SELECT COUNT(*)
+                FROM rsvps r
+                WHERE r.event_id = e.id
+                AND r.attending = 'No'
+            ) AS no_count
+
+        FROM rsvp_events e
+        ORDER BY e.id DESC
+    """).fetchall()
+
+    conn.close()
+
+    return render_template(
+        "admin_dashboard.html",
+        events=events
+    )
+
+
+# ---------------------------------------------------------
+# ADMIN CREATE RSVP EVENT
+# ---------------------------------------------------------
+
+@app.route("/admin/rsvp/create", methods=["POST"])
+def create_rsvp_event():
+
+    if not session.get("admin_logged_in"):
+        return redirect(url_for("admin_login"))
+
+    title = request.form.get("title", "").strip()
+    event_date = request.form.get("event_date", "").strip()
+    event_time = request.form.get("event_time", "").strip()
+
+    if not title or not event_date or not event_time:
+        return redirect(url_for("admin_dashboard"))
+
+    conn = get_rsvp_db()
+
+    cursor = conn.execute("""
+        INSERT INTO rsvp_events
+        (title, event_date, event_time)
+        VALUES (?, ?, ?)
+    """, (
+        title,
+        event_date,
+        event_time
+    ))
+
+    event_id = cursor.lastrowid
+
+    conn.commit()
+    conn.close()
+
+    return redirect(
+        url_for(
+            "admin_dashboard",
+            created=event_id
+        )
+    )
+
+
+# ---------------------------------------------------------
+# PUBLIC RSVP PAGE
+# ---------------------------------------------------------
+
+@app.route("/rsvp/<int:event_id>", methods=["GET", "POST"])
+def rsvp_event(event_id):
+
+    conn = get_rsvp_db()
+
+    event = conn.execute(
+        "SELECT * FROM rsvp_events WHERE id = ?",
+        (event_id,)
+    ).fetchone()
+
+    if not event:
+        conn.close()
+        return "RSVP event not found.", 404
+
+    submitted = False
+
+    if request.method == "POST":
+
+        first_name = request.form.get(
+            "first_name", ""
+        ).strip()
+
+        attending = request.form.get(
+            "attending", ""
+        ).strip()
+
+        if first_name and attending in ["Yes", "No"]:
+
+            conn.execute("""
+                INSERT INTO rsvps
+                (event_id, first_name, attending)
+                VALUES (?, ?, ?)
+            """, (
+                event_id,
+                first_name,
+                attending
+            ))
+
+            conn.commit()
+
+            submitted = True
+
+    conn.close()
+
+    return render_template(
+        "rsvp.html",
+        event=event,
+        submitted=submitted
+    )
+
+
+# ---------------------------------------------------------
+# ADMIN RSVP RESULTS
+# ---------------------------------------------------------
+
+@app.route("/admin/rsvp/<int:event_id>")
+def admin_rsvp_results(event_id):
+
+    if not session.get("admin_logged_in"):
+        return redirect(url_for("admin_login"))
+
+    conn = get_rsvp_db()
+
+    event = conn.execute(
+        "SELECT * FROM rsvp_events WHERE id = ?",
+        (event_id,)
+    ).fetchone()
+
+    responses = conn.execute("""
+        SELECT *
+        FROM rsvps
+        WHERE event_id = ?
+        ORDER BY created_at DESC
+    """, (event_id,)).fetchall()
+
+    conn.close()
+
+    return render_template(
+        "admin_rsvp_results.html",
+        event=event,
+        responses=responses
+    )
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000, debug=False)
