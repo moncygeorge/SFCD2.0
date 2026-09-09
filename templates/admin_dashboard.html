@@ -1,9 +1,10 @@
 <!DOCTYPE html>
+
 <html>
 <head>
 
 <meta name="viewport"
-      content="width=device-width, initial-scale=1">
+   content="width=device-width, initial-scale=1">
 
 <title>SFCD Admin</title>
 
@@ -13,12 +14,17 @@ body {
     font-family: Arial, sans-serif;
     background:#f4f6f8;
     margin:0;
+    color:#222;
 }
 
 header {
     background:#17324d;
     color:white;
     padding:20px;
+}
+
+header strong {
+    font-size:20px;
 }
 
 .container {
@@ -35,11 +41,19 @@ header {
     box-shadow:0 3px 15px rgba(0,0,0,.08);
 }
 
+h2 {
+    margin-top:0;
+    color:#17324d;
+}
+
 input {
     width:100%;
     padding:12px;
     margin:7px 0 15px;
     box-sizing:border-box;
+    border:1px solid #ccc;
+    border-radius:7px;
+    font-size:16px;
 }
 
 button {
@@ -49,11 +63,20 @@ button {
     padding:13px 20px;
     border-radius:7px;
     cursor:pointer;
+    font-size:15px;
+}
+
+button:hover {
+    background:#244d72;
 }
 
 .event {
     border-top:1px solid #ddd;
-    padding:18px 0;
+    padding:20px 0;
+}
+
+.event:first-of-type {
+    border-top:none;
 }
 
 .link {
@@ -61,10 +84,78 @@ button {
     padding:12px;
     margin-top:8px;
     word-break:break-all;
+    border-radius:7px;
+    font-family:monospace;
 }
 
 a {
     color:#175a92;
+    text-decoration:none;
+}
+
+a:hover {
+    text-decoration:underline;
+}
+
+.success-box {
+    background:#eaf7ec;
+    border:1px solid #9fd5a7;
+    color:#245c2b;
+    padding:15px;
+    border-radius:8px;
+    margin-bottom:25px;
+}
+
+.stats {
+    margin:12px 0;
+}
+
+.stat {
+    display:inline-block;
+    margin-right:25px;
+    font-size:16px;
+}
+
+.actions {
+    margin-top:15px;
+}
+
+.actions a {
+    margin-left:12px;
+}
+
+.logout {
+    float:right;
+    color:white;
+}
+
+@media (max-width:600px) {
+
+    .container {
+        margin:15px auto;
+        padding:12px;
+    }
+
+    .card {
+        padding:18px;
+    }
+
+    .logout {
+        float:none;
+        display:block;
+        margin-top:10px;
+    }
+
+    button {
+        width:100%;
+        margin-bottom:10px;
+    }
+
+    .actions a {
+        display:block;
+        margin:8px 0 0 0;
+    }
+
 }
 
 </style>
@@ -74,47 +165,68 @@ a {
 <body>
 
 <header>
-    <strong>SFCD Administration</strong>
 
-    <span style="float:right;">
-        <a href="/admin_logout"
-           style="color:white;">
-            Logout
-        </a>
-    </span>
+```
+<strong>SFCD Administration</strong>
+
+<a href="/admin_logout"
+   class="logout">
+    Logout
+</a>
+```
+
 </header>
 
 <div class="container">
 
+{% if request.args.get('created') %}
+
+<div class="success-box">
+    RSVP event created successfully. Your RSVP link is ready below.
+</div>
+
+{% endif %}
+
 <div class="card">
 
-<h2>Create RSVP</h2>
+<h2>Create RSVP Event</h2>
+
+<p>
+Create an RSVP link that you can send directly to the church WhatsApp group.
+</p>
 
 <form method="POST"
       action="/admin/rsvp/create">
 
-<label>Event Name</label>
+<label>
+    Event Name
+</label>
 
 <input
-    name="title"
-    value="Practical Evangelism"
-    required>
+ type="text"
+ name="title"
+ value="Practical Evangelism"
+ required>
 
-<label>Date</label>
-
-<input
-    type="date"
-    name="event_date"
-    value="2026-09-26"
-    required>
-
-<label>Time</label>
+<label>
+    Event Date
+</label>
 
 <input
-    type="time"
-    name="event_time"
-    value="10:30"
-    required>
+ type="date"
+ name="event_date"
+ value="2026-09-26"
+ required>
+
+<label>
+    Event Time
+</label>
+
+<input
+ type="time"
+ name="event_time"
+ value="10:30"
+ required>
 
 <button type="submit">
     Generate RSVP Link
@@ -124,64 +236,93 @@ a {
 
 </div>
 
-
 <div class="card">
 
 <h2>RSVP Events</h2>
 
 {% if events %}
 
+```
 {% for event in events %}
 
 <div class="event">
 
-<h3>{{ event.title }}</h3>
+    <h3>
+        {{ event.title }}
+    </h3>
 
-<p>
-{{ event.event_date }}
-at
-{{ event.event_time }}
-</p>
+    <p>
+        <strong>Date:</strong>
+        {{ event.event_date }}
+        &nbsp;
+        <strong>Time:</strong>
+        {{ event.event_time }}
+    </p>
 
-<p>
-<strong>Coming:</strong>
-{{ event.yes_count }}
+    <div class="stats">
 
-&nbsp;&nbsp;
+        <span class="stat">
+            <strong>Coming:</strong>
+            {{ event.yes_count }}
+        </span>
 
-<strong>Not Coming:</strong>
-{{ event.no_count }}
-</p>
+        <span class="stat">
+            <strong>Not Coming:</strong>
+            {{ event.no_count }}
+        </span>
 
-<div class="link"
-     id="link{{ event.id }}">
+    </div>
 
-{{ request.host_url.rstrip('/') }}/rsvp/{{ event.id }}
 
-</div>
+    <p>
+        <strong>RSVP Link:</strong>
+    </p>
 
-<br>
+    <div class="link"
+         id="link{{ event.id }}">
 
-<button
-onclick="copyLink('{{ request.host_url.rstrip('/') }}/rsvp/{{ event.id }}')">
+        {{ request.host_url.rstrip('/') }}/rsvp/{{ event.id }}
 
-Copy RSVP Link
+    </div>
 
-</button>
 
-&nbsp;
+    <div class="actions">
 
-<a href="/admin/rsvp/{{ event.id }}">
-View Responses
-</a>
+        <button
+            type="button"
+            onclick="copyLink('{{ request.host_url.rstrip('/') }}/rsvp/{{ event.id }}')">
+
+            Copy RSVP Link
+
+        </button>
+
+        <a
+            href="{{ request.host_url.rstrip('/') }}/rsvp/{{ event.id }}"
+            target="_blank">
+
+            Open RSVP Page
+
+        </a>
+
+        <a
+            href="/admin/rsvp/{{ event.id }}">
+
+            View Responses
+
+        </a>
+
+    </div>
 
 </div>
 
 {% endfor %}
+```
 
 {% else %}
 
-<p>No RSVP events have been created yet.</p>
+<p>
+No RSVP events have been created yet.
+</p>
 
 {% endif %}
 
@@ -189,14 +330,17 @@ View Responses
 
 </div>
 
-
 <script>
 
 function copyLink(link) {
 
-    navigator.clipboard.writeText(link);
-
-    alert("RSVP link copied!");
+    navigator.clipboard.writeText(link)
+        .then(function() {
+            alert("RSVP link copied!");
+        })
+        .catch(function() {
+            prompt("Copy this RSVP link:", link);
+        });
 
 }
 
