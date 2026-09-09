@@ -13,7 +13,6 @@ from reportlab.lib import colors
 from reportlab.pdfgen import canvas
 from init_db import create_tables, migrate_files_to_db
 from push import save_subscription, send_push_to_all, VAPID_PUBLIC_KEY, push_configured
-SECRET_KEY=some-long-random-secret-value
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'your_secret_key')
 app.config['MAX_CONTENT_LENGTH'] = 8 * 1024 * 1024  # 8 MB upload limit
