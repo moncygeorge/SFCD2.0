@@ -1006,47 +1006,6 @@ def admin_logout():
     return redirect(url_for("admin_login"))
 
 
-# ---------------------------------------------------------
-# ADMIN DASHBOARD
-# ---------------------------------------------------------
-
-@app.route("/admin")
-def admin_dashboard():
-
-    if not session.get("admin_logged_in"):
-        return redirect(url_for("admin_login"))
-
-    conn = get_rsvp_db()
-
-    events = conn.execute("""
-        SELECT
-            e.*,
-
-            (
-                SELECT COUNT(*)
-                FROM rsvps r
-                WHERE r.event_id = e.id
-                AND r.attending = 'Yes'
-            ) AS yes_count,
-
-            (
-                SELECT COUNT(*)
-                FROM rsvps r
-                WHERE r.event_id = e.id
-                AND r.attending = 'No'
-            ) AS no_count
-
-        FROM rsvp_events e
-        ORDER BY e.id DESC
-    """).fetchall()
-
-    conn.close()
-
-    return render_template(
-        "admin_dashboard.html",
-        events=events
-    )
-
 
 # ---------------------------------------------------------
 # ADMIN CREATE RSVP EVENT
