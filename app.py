@@ -84,38 +84,24 @@ def load_voting_status():
     return row['value'] if row else 'closed'
 
 # ── auth ──────────────────────────────────────────────────────────────────────
-@app.route('/admin_login', methods=['GET', 'POST'])
+@app.route("/admin_login", methods=["GET", "POST"])
 def admin_login():
-    if request.method == 'POST':
-        username = request.form.get('username', '').strip()
-        password = request.form.get('password', '')
+    error = None
 
-        if not username or not password:
-            flash("Please enter both username and password.", "danger")
-            return redirect(url_for('admin_login'))
+    if request.method == "POST":
+        username = request.form.get("username", "").strip()
+        password = request.form.get("password", "")
 
-        try:
-            conn = get_db()
-            admin = conn.execute(
-                "SELECT * FROM admins WHERE username=?", (username,)
-            ).fetchone()
-            conn.close()
+        admin_username = os.environ.get("ADMIN_USERNAME", "admin")
+        admin_password = os.environ.get("ADMIN_PASSWORD", "")
 
-            if admin and check_password_hash(admin['password_hash'], password):
-                session.clear()
-                session['username'] = 'admin'
-                session['is_admin'] = True
-                return redirect(url_for('admin_dashboard'))
-            else:
-                flash("Invalid username or password.", "danger")
-                return redirect(url_for('admin_login'))
+        if username == admin_username and password == admin_password:
+            session["admin_logged_in"] = True
+            return redirect(url_for("admin_dashboard"))
 
-        except Exception as e:
-            flash(f"Database error: {e}", "danger")
-            return redirect(url_for('admin_login'))
+        error = "Invalid username or password."
 
-    return render_template('admin_login.html')
-
+    return render_template("admin_login.html", error=error)
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
