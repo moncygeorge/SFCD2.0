@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<meta name="viewport"
+      content="width=device-width, initial-scale=1">
+
+<title>SFCD Admin</title>
+
+<style>
+
+body {
+    font-family: Arial, sans-serif;
+    background:#f4f6f8;
+    margin:0;
+}
+
+header {
+    background:#17324d;
+    color:white;
+    padding:20px;
+}
+
+.container {
+    max-width:900px;
+    margin:30px auto;
+    padding:20px;
+}
+
+.card {
+    background:white;
+    padding:25px;
+    border-radius:14px;
+    margin-bottom:25px;
+    box-shadow:0 3px 15px rgba(0,0,0,.08);
+}
+
+input {
+    width:100%;
+    padding:12px;
+    margin:7px 0 15px;
+    box-sizing:border-box;
+}
+
+button {
+    background:#17324d;
+    color:white;
+    border:none;
+    padding:13px 20px;
+    border-radius:7px;
+    cursor:pointer;
+}
+
+.event {
+    border-top:1px solid #ddd;
+    padding:18px 0;
+}
+
+.link {
+    background:#eef4f7;
+    padding:12px;
+    margin-top:8px;
+    word-break:break-all;
+}
+
+a {
+    color:#175a92;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<header>
+    <strong>SFCD Administration</strong>
+
+    <span style="float:right;">
+        <a href="/admin_logout"
+           style="color:white;">
+            Logout
+        </a>
+    </span>
+</header>
+
+<div class="container">
+
+<div class="card">
+
+<h2>Create RSVP</h2>
+
+<form method="POST"
+      action="/admin/rsvp/create">
+
+<label>Event Name</label>
+
+<input
+    name="title"
+    value="Practical Evangelism"
+    required>
+
+<label>Date</label>
+
+<input
+    type="date"
+    name="event_date"
+    value="2026-09-26"
+    required>
+
+<label>Time</label>
+
+<input
+    type="time"
+    name="event_time"
+    value="10:30"
+    required>
+
+<button type="submit">
+    Generate RSVP Link
+</button>
+
+</form>
+
+</div>
+
+
+<div class="card">
+
+<h2>RSVP Events</h2>
+
+{% if events %}
+
+{% for event in events %}
+
+<div class="event">
+
+<h3>{{ event.title }}</h3>
+
+<p>
+{{ event.event_date }}
+at
+{{ event.event_time }}
+</p>
+
+<p>
+<strong>Coming:</strong>
+{{ event.yes_count }}
+
+&nbsp;&nbsp;
+
+<strong>Not Coming:</strong>
+{{ event.no_count }}
+</p>
+
+<div class="link"
+     id="link{{ event.id }}">
+
+{{ request.host_url.rstrip('/') }}/rsvp/{{ event.id }}
+
+</div>
+
+<br>
+
+<button
+onclick="copyLink('{{ request.host_url.rstrip('/') }}/rsvp/{{ event.id }}')">
+
+Copy RSVP Link
+
+</button>
+
+&nbsp;
+
+<a href="/admin/rsvp/{{ event.id }}">
+View Responses
+</a>
+
+</div>
+
+{% endfor %}
+
+{% else %}
+
+<p>No RSVP events have been created yet.</p>
+
+{% endif %}
+
+</div>
+
+</div>
+
+
+<script>
+
+function copyLink(link) {
+
+    navigator.clipboard.writeText(link);
+
+    alert("RSVP link copied!");
+
+}
+
+</script>
+
+</body>
+</html>
